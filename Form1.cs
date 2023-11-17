@@ -1,16 +1,10 @@
-﻿using Microsoft.Win32;
-using System;
-using System.Data;
-using System.Drawing;
-using System.Linq;
+using Microsoft.Win32;
 using System.Management;
-using System.Windows.Forms;
 
 namespace MemoryUsageMonitor
 {
     public partial class Form1 : Form
     {
-
         public Form1()
         {
             InitializeComponent();
@@ -32,9 +26,7 @@ namespace MemoryUsageMonitor
         {
             string key = "MemoryUsageMonitor";
 
-            startupToolStripMenuItem.CheckedChanged -= startupToolStripMenuItem_CheckedChanged;
-
-            RegistryKey rk = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+            RegistryKey? rk = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
             if (rk.GetValue(key) == null)
             {
                 startupToolStripMenuItem.Checked = false;
@@ -43,20 +35,20 @@ namespace MemoryUsageMonitor
             {
                 startupToolStripMenuItem.Checked = true;
             }
-
-            startupToolStripMenuItem.CheckedChanged += startupToolStripMenuItem_CheckedChanged;
         }
 
         void UpdateIcon()
         {
             var wmiObject = new ManagementObjectSearcher("select * from Win32_OperatingSystem");
 
-            var memoryValues = wmiObject.Get().Cast<ManagementObject>().Select(mo => new
-            {
-                FreePhysicalMemory = Double.Parse(mo["FreePhysicalMemory"].ToString()),
-                TotalVisibleMemorySize = Double.Parse(mo["TotalVisibleMemorySize"].ToString())
-            }).FirstOrDefault();
-
+            var memoryValues = wmiObject.Get()
+                .Cast<ManagementObject>()
+                .Select(mo => new
+                {
+                    FreePhysicalMemory = Double.Parse(mo?["FreePhysicalMemory"]?.ToString() ?? "0"),
+                    TotalVisibleMemorySize = Double.Parse(mo?["TotalVisibleMemorySize"]?.ToString() ?? "0")
+                })
+                .FirstOrDefault();
 
             if (memoryValues != null)
             {
@@ -64,11 +56,11 @@ namespace MemoryUsageMonitor
                 var percentRound = Math.Round(percent, 0, MidpointRounding.AwayFromZero).ToString();
 
                 Color color = new Color();
-                if(percent < 79.5)
+                if (percent < 79.5)
                 {
                     color = Color.LightGreen;
                 }
-                else if(percent < 89.5)
+                else if (percent < 89.5)
                 {
                     color = Color.Orange;
                 }
