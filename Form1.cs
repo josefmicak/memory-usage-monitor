@@ -1,5 +1,6 @@
 using Microsoft.Win32;
 using System.Management;
+using System.Runtime.InteropServices;
 
 namespace MemoryUsageMonitor
 {
@@ -39,49 +40,55 @@ namespace MemoryUsageMonitor
 
         void UpdateIcon()
         {
-            var wmiObject = new ManagementObjectSearcher("select * from Win32_OperatingSystem");
-
-            var memoryValues = wmiObject.Get()
-                .Cast<ManagementObject>()
-                .Select(mo => new
-                {
-                    FreePhysicalMemory = Double.Parse(mo?["FreePhysicalMemory"]?.ToString() ?? "0"),
-                    TotalVisibleMemorySize = Double.Parse(mo?["TotalVisibleMemorySize"]?.ToString() ?? "0")
-                })
-                .FirstOrDefault();
-
-            if (memoryValues != null)
+            try
             {
-                var percent = ((memoryValues.TotalVisibleMemorySize - memoryValues.FreePhysicalMemory) / memoryValues.TotalVisibleMemorySize) * 100;
-                var percentRound = Math.Round(percent, 0, MidpointRounding.AwayFromZero).ToString();
+                var wmiObject = new ManagementObjectSearcher("select * from Win32_OperatingSystem");
+                var memoryValues = wmiObject.Get()
+                    .Cast<ManagementObject>()
+                    .Select(mo => new
+                    {
+                        FreePhysicalMemory = Double.Parse(mo?["FreePhysicalMemory"]?.ToString()),
+                        TotalVisibleMemorySize = Double.Parse(mo?["TotalVisibleMemorySize"]?.ToString())
+                    })
+                    .FirstOrDefault();
 
-                Color color = new Color();
-                if (percent < 79.5)
+                if (memoryValues != null)
                 {
-                    color = Color.LightGreen;
+                    var percent = ((memoryValues.TotalVisibleMemorySize - memoryValues.FreePhysicalMemory) / memoryValues.TotalVisibleMemorySize) * 100;
+                    var percentRound = Math.Round(percent, 0, MidpointRounding.AwayFromZero).ToString();
+
+                    Color color = new Color();
+                    if (percent < 79.5)
+                    {
+                        color = Color.LightGreen;
+                    }
+                    else if (percent < 89.5)
+                    {
+                        color = Color.Orange;
+                    }
+                    else
+                    {
+                        color = Color.Red;
+                    }
+
+                    Brush brush = new SolidBrush(color);
+                    Font drawFont = new Font("Arial", 10, FontStyle.Bold);
+
+                    Bitmap bitmap = new Bitmap(16, 16);
+                    Graphics graphics = Graphics.FromImage(bitmap);
+                    graphics.DrawString(percentRound, drawFont, brush, 0, 0);
+
+                    Icon icon = Icon.FromHandle(bitmap.GetHicon());
+
+                    notifyIcon1.Icon = icon;
+
+                    DestroyIcon(icon.Handle);
                 }
-                else if (percent < 89.5)
-                {
-                    color = Color.Orange;
-                }
-                else
-                {
-                    color = Color.Red;
-                }
-
-                Brush brush = new SolidBrush(color);
-                Font drawFont = new Font("Arial", 10, FontStyle.Bold);
-
-                Bitmap bitmap = new Bitmap(16, 16);
-                Graphics graphics = Graphics.FromImage(bitmap);
-                graphics.DrawString(percentRound, drawFont, brush, 0, 0);
-
-                Icon icon = Icon.FromHandle(bitmap.GetHicon());
-
-                notifyIcon1.Icon = icon;
-                Console.WriteLine(percent);
             }
-
+            catch(Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
+            }
         }
 
         private void ExitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -114,5 +121,8 @@ namespace MemoryUsageMonitor
         {
             UpdateRegistrySettings(startupToolStripMenuItem.Checked);
         }
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = CharSet.Auto)]
+        extern static bool DestroyIcon(IntPtr handle);
     }
 }
