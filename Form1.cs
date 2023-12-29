@@ -72,8 +72,8 @@ namespace MemoryUsageMonitor
                     }
 
                     Brush brush = new SolidBrush(color);
-                    Font drawFont = new Font("Arial", 10, FontStyle.Bold);
-
+                    Font drawFont = new Font("Arial", 13, FontStyle.Bold, GraphicsUnit.Pixel);
+                    
                     Bitmap bitmap = new Bitmap(16, 16);
                     Graphics graphics = Graphics.FromImage(bitmap);
                     graphics.DrawString(percentRound, drawFont, brush, 0, 0);
